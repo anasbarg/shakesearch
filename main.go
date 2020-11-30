@@ -10,7 +10,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 )
 
 func main() {
@@ -106,10 +105,6 @@ func SemiMeaningfulSlice(s string, from int) string {
 			break
 		}
 	}
-
-	println("from: " + strconv.Itoa(from))
-	println("prevIdx: " + strconv.Itoa(prevIdx))
-	println("nextIdx: " + strconv.Itoa(nextIdx))
 
 	return s[prevIdx:nextIdx]
 }
