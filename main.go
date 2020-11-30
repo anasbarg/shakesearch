@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 )
 
 func main() {
@@ -25,7 +27,7 @@ func main() {
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "3001"
+		port = "3002"
 	}
 
 	fmt.Printf("Listening on port %s...", port)
@@ -68,15 +70,46 @@ func (s *Searcher) Load(filename string) error {
 		return fmt.Errorf("Load: %w", err)
 	}
 	s.CompleteWorks = string(dat)
-	s.SuffixArray = suffixarray.New(dat)
+	s.SuffixArray = suffixarray.New([]byte(strings.ToLower(s.CompleteWorks)))
 	return nil
 }
 
 func (s *Searcher) Search(query string) []string {
-	idxs := s.SuffixArray.Lookup([]byte(query), -1)
+	idxs := s.SuffixArray.Lookup([]byte(strings.ToLower(query)), -1)
 	results := []string{}
 	for _, idx := range idxs {
-		results = append(results, s.CompleteWorks[idx-250:idx+250])
+		results = append(results, SemiMeaningfulSlice(s.CompleteWorks, idx))
 	}
 	return results
+}
+
+func SemiMeaningfulSlice(s string, from int) string {
+	const period byte = '.'
+	const semicolon byte = ';'
+	const openingBracket byte = '['
+	const closingBracket byte = ']'
+	prevIdx := 0;
+	for i := from - 100; i >= 0; i-- {
+		if (s[i] == period) || (s[i] == semicolon) {
+			prevIdx = i+1;
+			break;
+		}
+	} 
+
+	nextIdx := 0
+	for i := from + 100; i < len(s); i++ {
+		if s[prevIdx] == openingBracket && s[i+1] == closingBracket {
+			nextIdx = i+1;
+			break
+		} else if (s[i] == period) || (s[i] == semicolon) {
+			nextIdx = i+1;
+			break
+		}
+	}
+
+	println("from: " + strconv.Itoa(from))
+	println("prevIdx: " + strconv.Itoa(prevIdx))
+	println("nextIdx: " + strconv.Itoa(nextIdx))
+
+	return s[prevIdx:nextIdx]
 }
